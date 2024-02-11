@@ -82,3 +82,9 @@ def escreveEmArquivo(nome_arquivo, num_linha, texto):
 
     with open(nome_arquivo, 'w') as arquivo:
         arquivo.writelines(linhas)
+
+def removeArquivosPasta(nome_pasta):
+    arquivos = os.listdir(nome_pasta)
+
+    for arquivo in arquivos:
+        os.remove(os.path.join(nome_pasta, arquivo))

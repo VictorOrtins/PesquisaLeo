@@ -220,6 +220,81 @@ def passo_a_passo_scikit(caminho_base, final_mascara, final_inpaint, final, t):
     rodarBaseScikit(caminho_base, final_mascara, final_inpaint)
     mediaPonderadaScikit(caminho_base, final_inpaint, final, t)
 
+def passo_a_passo_segmentation_ns(valor_inpaint, caminho_latentes, caminho_enhanceds, caminho_segmentado, caminho_final, t):
+    latentes = os.listdir(caminho_latentes)
+    latentes.sort()
+    enhanceds = os.listdir(caminho_enhanceds)
+    enhanceds.sort()
+    segmentados = os.listdir(caminho_segmentado)
+    segmentados.sort()
+
+    caminho_final_fingerprints = os.path.join(caminho_final, 'fingerprints')
+    caminho_final_groundtruths = os.path.join(caminho_final, 'groundtruths')
+
+    try:
+        os.mkdir(caminho_final)
+    except FileExistsError:
+        pass
+
+    try:
+        os.mkdir(caminho_final_fingerprints)
+    except FileExistsError:
+        pass
+
+    try:
+        os.mkdir(caminho_final_groundtruths)
+    except FileExistsError:
+        pass
+
+    contador_img = 0
+
+    for i in range(len(latentes)):
+        latente = cv2.imread(os.path.join(caminho_latentes, latentes[i]))
+
+        enhanced_inpaint = cv2.imread(os.path.join(caminho_enhanceds, enhanceds[i]), cv2.IMREAD_GRAYSCALE)
+
+        print('inpaint')
+        enhanced_inpaint = 255 - enhanced_inpaint
+
+        ns = cv2.inpaint(latente, enhanced_inpaint, valor_inpaint, cv2.INPAINT_NS)
+
+        segmentado = cv2.imread(os.path.join(caminho_segmentado, segmentados[i]))
+        segmentado = 255 - segmentado
+
+
+        for j in range(len(enhanceds)):
+            enhanced_ponderada = cv2.imread(os.path.join(caminho_enhanceds, enhanceds[j]))
+
+            enhanced_ponderada = cv2.bitwise_or(enhanced_ponderada, segmentado)
+            
+            fingerprint = cv2.addWeighted(enhanced_ponderada, 1-t, ns, t, 0)
+            
+            cv2.imwrite(os.path.join(caminho_final_groundtruths, f'({contador_img}).png'), enhanced_ponderada)
+            cv2.imwrite(os.path.join(caminho_final_fingerprints, f'({contador_img}).png'), fingerprint)
+
+            contador_img += 1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+
+
+
+    
+
+
+
 
 
 

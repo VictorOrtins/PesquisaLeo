@@ -14,4 +14,12 @@ from contorno import *
 # preProcessamentoScikit('enhancements100/digitais', 'mascara_teste')
 # rodarBaseScikit('enhancements100/latentes/', 'mascara_teste', 'inpaint_teste')
 # media_ponderada('enhancements100/digitais','inpaint_teste', 'final_teste', 0.99)
-convexHullContornoBase('inpaint/ns', 'convexHull', 10, 30)
+# convexHullContornoBase('inpaint/ns', 'convexHull', 10, 30)
+
+# passo_a_passo_segmentation_ns(100, 'enhancements100/latentes', 'enhancements100/digitais', 'fingerprint_segmentation', 'final_segmentation', 0.99)
+
+
+# removeArquivosPasta(os.path.join('final_segmentation', 'fingerprints'))
+# removeArquivosPasta(os.path.join('final_segmentation', 'groundtruths'))
+
+print(len(os.listdir('final_segmentation/fingerprints')), len(os.listdir('final_segmentation/groundtruths')))
