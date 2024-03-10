@@ -3,17 +3,17 @@ import cv2
 from auxiliar import *
 import threading
 import skimage as sck
-import numpy as np
+import numpy as np    
 
 
-def preProcessamento(caminho_base, tam_mascara, enderecoMascara):
-    nomes_arquivos = os.listdir(caminho_base) 
+def preProcessamento(caminho_mascaras, tam_mascara, final_mascara):
+    nomes_arquivos = os.listdir(caminho_mascaras) 
 
-    enderecoMascaraTelea = enderecoMascara + '/telea'
-    enderecoMascaraNs = enderecoMascara + '/ns'
+    enderecoMascaraTelea = os.path.join(final_mascara, 'telea')
+    enderecoMascaraNs = os.path.join(final_mascara, 'ns')
 
     try:
-        os.mkdir(enderecoMascara)
+        os.mkdir(final_mascara)
     except FileExistsError as e:
         pass
 
@@ -23,44 +23,45 @@ def preProcessamento(caminho_base, tam_mascara, enderecoMascara):
         pass    
 
     try:
-        os.mkdir(enderecoMascaraTelea)
+        os.mkdir(enderecoMascaraNs)
     except FileExistsError as e:
         pass
 
     for c in range(0, len(nomes_arquivos)):
         nomeArquivo: str = nomes_arquivos[c][0:nomes_arquivos[c].find('.')]
-        
-        # Carregar a imagem à qual será aplicada a máscara
-        imagem = cv2.imread(f'.\{caminho_base}\\' + nomes_arquivos[c])
 
         # Mascara usada na imagem
-        mascara = cv2.imread(f'.\{caminho_base}\\' + nomes_arquivos[c + 1])
+        mascara = cv2.imread(os.path.join(caminho_mascaras, nomes_arquivos[c]))
 
         mascara = 255 - mascara
 
-        cv2.imwrite(enderecoMascaraNs + '\\' + nomeArquivo + '.png', mascara)
+        # mascara = aplicarProcessamentoMascara(mascara, tam_mascara, tam_mascara, preProcessamentoMascara.DILATACAO, formatoMascara.ELIPSE, 1, None)
+
+        cv2.imwrite(os.path.join(enderecoMascaraNs, nomeArquivo) + '.png', mascara)
 
         mascara = aplicarProcessamentoMascara(mascara, tam_mascara, tam_mascara, preProcessamentoMascara.DILATACAO, formatoMascara.ELIPSE, 1, None)
 
-        cv2.imwrite(enderecoMascaraTelea + '\\' + nomeArquivo + '.png', mascara)
+        cv2.imwrite(os.path.join(enderecoMascaraTelea, nomeArquivo) + '.png', mascara)
 
 
-def rodar_base(valor_inpaint, caminho_base, enderecoMascara, enderecoInpaint):
+def rodar_base(valor_inpaint, caminho_mascaras, caminho_digitais, final_inpaint):
     # Obtém os nomes dos arquivos no diretório
-    nomes_arquivos = os.listdir(caminho_base)  
 
     threads: list = []
         
     valor: int = valor_inpaint
 
-    enderecoMascaraTelea: str = enderecoMascara + '/telea/'
-    enderecoMascaraNs: str = enderecoMascara + '/ns/'
+    enderecoMascaraTelea = os.path.join(caminho_mascaras, 'telea')
+    enderecoMascaraNs = os.path.join(caminho_mascaras, 'ns')
 
-    salvarTelea: str = enderecoInpaint + '/telea'
-    salvarNs: str = enderecoInpaint + '/ns'
+    nomes_arquivos = os.listdir(enderecoMascaraNs)
+
+
+    salvarTelea = os.path.join(final_inpaint, 'telea')
+    salvarNs = os.path.join(final_inpaint, 'ns')
 
     try:
-        os.mkdir(enderecoInpaint)
+        os.mkdir(final_inpaint)
     except FileExistsError as e:
         pass
     
@@ -75,21 +76,22 @@ def rodar_base(valor_inpaint, caminho_base, enderecoMascara, enderecoInpaint):
         pass
 
     for c in range(0, len(nomes_arquivos)):
-        nomeArquivo: str = nomes_arquivos[c][0:nomes_arquivos[c].find('.')]
+        nome_arquivo: str = nomes_arquivos[c][0:nomes_arquivos[c].find('.')]
+
         # Carregar a imagem à qual será aplicada a máscara
-        imagem = cv2.imread(f'.\{caminho_base}\\' + nomes_arquivos[c])
+        imagem = cv2.imread(os.path.join(caminho_digitais, nomes_arquivos[c]).split('.')[0] + '.bmp')
+        
+        mascaraTelea = cv2.imread(os.path.join(enderecoMascaraTelea, nome_arquivo) + '.png', cv2.IMREAD_GRAYSCALE)
+        mascaraNs = cv2.imread(os.path.join(enderecoMascaraNs, nome_arquivo) + '.png', cv2.IMREAD_GRAYSCALE)
 
-        mascaraTelea = cv2.imread(enderecoMascaraTelea + f'{nomeArquivo}.png', cv2.IMREAD_GRAYSCALE)
-        mascaraNs = cv2.imread(enderecoMascaraNs + f'{nomeArquivo}.png', cv2.IMREAD_GRAYSCALE)
-
-        # thread1 = threading.Thread(target=aplicarTelea,args=(nomeArquivo, imagem, mascaraTelea, valor, salvarTelea))
-        thread2 = threading.Thread(target=aplicarNS,args=(nomeArquivo, imagem, mascaraNs, valor, salvarNs))
+        thread1 = threading.Thread(target=aplicarTelea,args=(nome_arquivo, imagem, mascaraTelea, valor, salvarTelea))
+        thread2 = threading.Thread(target=aplicarNS,args=(nome_arquivo, imagem, mascaraNs, valor, salvarNs))
 
         # Aplicar o inpainting na imagem
-        # thread1.start()
+        thread1.start()
         thread2.start()
 
-        # threads.append(thread1)
+        threads.append(thread1)
         threads.append(thread2)
 
         # Controlando a quantidade de threads criadas
@@ -102,62 +104,67 @@ def rodar_base(valor_inpaint, caminho_base, enderecoMascara, enderecoInpaint):
         for thread in threads:
             thread.join()
 
-def media_ponderada(caminho_base, enderecoInpaint, enderecoFinal, t):
-    nomes_arquivos = os.listdir(caminho_base)
+def media_ponderada(caminho_fingerprints, caminho_groundtruths, caminho_segmentation, caminho_inpaint, caminho_final, t):
+    nomes_arquivos = os.listdir(caminho_fingerprints)
 
-    enderecoTelea: str = enderecoInpaint + '/telea'
-    enderecoNS: str = enderecoInpaint + '/ns'
+    endereco_telea = os.path.join(caminho_inpaint, 'telea')
+    endereco_ns = os.path.join(caminho_inpaint, 'ns')
 
-    arquivos_telea = os.listdir(enderecoTelea)
-
-    arquivos_NS = os.listdir(enderecoNS)
+    arquivos_telea = os.listdir(endereco_telea)
+    arquivos_NS = os.listdir(endereco_ns)
+    arquivos_segmentados = os.listdir(caminho_segmentation)
 
     try:
-        os.mkdir(enderecoFinal)
+        os.mkdir(caminho_final)
     except FileExistsError as e:
         pass
     
     try:
-        os.mkdir(enderecoFinal + '/ns')
+        os.mkdir(os.path.join(caminho_final, 'ns'))
     except FileExistsError as e:
         pass
 
     try:
-        os.mkdir(enderecoFinal + '/telea')
+        os.mkdir(os.path.join(caminho_final, 'telea'))
     except FileExistsError as e:
         pass
 
 
-    for c in range(1, len(nomes_arquivos)):
-        nomeArquivo: str = nomes_arquivos[c][0:nomes_arquivos[c].find('.')]
+    for c in range(0, len(nomes_arquivos)):
+        nome_arquivo: str = nomes_arquivos[c][0:nomes_arquivos[c].find('.')]
 
-        imagemEnhanced = cv2.imread(f'.\\{caminho_base}\\' + nomes_arquivos[c])
+        imagem_enhanced = cv2.imread(os.path.join(caminho_groundtruths, nomes_arquivos[c].split('.')[0] + '.png'))
 
         try:
-            os.mkdir(f'.\\final\\ns\\' + nomeArquivo)
+            os.mkdir(os.path.join(caminho_final, 'ns', nome_arquivo))
         except FileExistsError:
             pass
 
         try:
-            os.mkdir(f'.\\final\\telea\\' + nomeArquivo)
+            os.mkdir(os.path.join(caminho_final, 'telea', nome_arquivo))
         except FileExistsError:
             pass
 
         for d in range(len(arquivos_NS)):
+            segmentado = cv2.imread(os.path.join(caminho_segmentation, arquivos_segmentados[d]))
+            segmentado = 255 - segmentado
 
-            imagemTelea = cv2.imread(enderecoTelea + '\\' + arquivos_telea[d])
-            imagemNS = cv2.imread(enderecoNS + '\\' + arquivos_NS[d])
+            enhanced_ponderada = cv2.bitwise_or(imagem_enhanced, segmentado)
 
-            ns = cv2.addWeighted(imagemEnhanced, 1-t, imagemNS, t, 0)
-            telea = cv2.addWeighted(imagemEnhanced, 1-t, imagemTelea, t, 0)
+            imagem_telea = cv2.imread(os.path.join(endereco_telea, arquivos_telea[d]))
+            imagem_ns = cv2.imread(os.path.join(endereco_ns, arquivos_NS[d]))
 
-            cv2.imwrite(f'.\\final\\ns\\{nomeArquivo}\\{arquivos_NS[d]}', ns)
-            cv2.imwrite(f'.\\final\\telea\\{nomeArquivo}\\{arquivos_telea[d]}', telea)
+            ns = cv2.addWeighted(enhanced_ponderada, 1-t, imagem_ns, t, 0)
+            telea = cv2.addWeighted(enhanced_ponderada, 1-t, imagem_telea, t, 0)
 
-def passo_a_passo(valor_inpaint, caminho_base):
-    preProcessamento(caminho_base)
-    rodar_base(valor_inpaint, caminho_base)
-    media_ponderada(caminho_base)
+
+            cv2.imwrite(os.path.join(caminho_final, 'ns', nome_arquivo, arquivos_NS[d]), ns)
+            cv2.imwrite(os.path.join(caminho_final, 'telea', nome_arquivo, arquivos_telea[d]), telea)
+
+def passo_a_passo(valor_inpaint, caminho_fingerprints, caminho_groundtruths, caminho_segmentation, tam_mascara, final_mascara, final_inpaint, caminho_final, t):
+    # preProcessamento(caminho_groundtruths, tam_mascara, final_mascara)
+    # rodar_base(valor_inpaint, final_mascara, caminho_fingerprints, final_inpaint)
+    media_ponderada(caminho_fingerprints, caminho_groundtruths, caminho_segmentation, final_inpaint, caminho_final, t)
 
 def preProcessamentoScikit(caminho_base, finalMascara):
     arquivos = os.listdir(caminho_base)
@@ -273,6 +280,8 @@ def passo_a_passo_segmentation_ns(valor_inpaint, caminho_latentes, caminho_enhan
             cv2.imwrite(os.path.join(caminho_final_fingerprints, f'({contador_img}).png'), fingerprint)
 
             contador_img += 1
+
+
 
 
 

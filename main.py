@@ -2,9 +2,11 @@ from auxiliar import *
 from inpaint import *
 from contorno import *
 
+import os
 
 
-# passo_a_passo(100, f'.\\enhancements100')
+
+passo_a_passo(100, 'enhanceds100/fingerprints', 'enhanceds100/groundtruths', 'fingerprint_segmentation', 2, 'dilatacao', 'inpainting', 'final', 0.99)
 # limiarContorno('1_R_8_4.png', 138, f'./inpaint/ns', './limiar_contorno')
 # dilatacaoContorno('4_L_7_1.png', 125, 10, 10, f'./inpaint/ns', './', 'enhancements100/digitais', 'porcentagem.txt')
 # otsuContornoBase('./inpaint/ns', './otsu')
@@ -15,11 +17,9 @@ from contorno import *
 # rodarBaseScikit('enhancements100/latentes/', 'mascara_teste', 'inpaint_teste')
 # media_ponderada('enhancements100/digitais','inpaint_teste', 'final_teste', 0.99)
 # convexHullContornoBase('inpaint/ns', 'convexHull', 10, 30)
-
 # passo_a_passo_segmentation_ns(100, 'enhancements100/latentes', 'enhancements100/digitais', 'fingerprint_segmentation', 'final_segmentation', 0.99)
 
 
-# removeArquivosPasta(os.path.join('final_segmentation', 'fingerprints'))
-# removeArquivosPasta(os.path.join('final_segmentation', 'groundtruths'))
 
-print(len(os.listdir('final_segmentation/fingerprints')), len(os.listdir('final_segmentation/groundtruths')))
+
+

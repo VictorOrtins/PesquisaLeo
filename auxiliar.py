@@ -19,11 +19,11 @@ class preProcessamentoMascara(Enum):
 
 def aplicarTelea(nome: str, imagem, mascara, valor: int, endereco: str):
     telea = cv2.inpaint(imagem, mascara, valor, cv2.INPAINT_TELEA)
-    cv2.imwrite(endereco + f"\\{nome}.png", telea)
+    cv2.imwrite(os.path.join(endereco, nome) + '.png', telea)
     
 def aplicarNS(nome: str, imagem, mascara, valor: int, endereco: str):
     ns = cv2.inpaint(imagem, mascara, valor, cv2.INPAINT_NS)
-    cv2.imwrite(endereco + f"\\{nome}.png", ns)
+    cv2.imwrite(os.path.join(endereco, nome) + '.png', ns)
 
 def aplicarProcessamentoMascara(mascara, m_matriz, n_matriz, preProcessamento: preProcessamentoMascara, formato: formatoMascara, iteracoes=1, tipo=cv2.MORPH_CLOSE):
     if preProcessamento == preProcessamentoMascara.DILATACAO:
